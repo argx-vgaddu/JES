@@ -1,0 +1,447 @@
+{
+  "jobs": [
+    {
+      "definition_id": "b102ac5e-7d8e-4594-96ed-b68bd7fcc5dd",
+      "name": "cm_pooled",
+      "description": "Auto-discovered pooled job: cm_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "a6f9385a-0a03-45e7-adaf-525b4e4a561e",
+      "name": "ae_pooled",
+      "description": "Auto-discovered pooled job: ae_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "4a815d55-1468-4a94-89af-d705a8b00426",
+      "name": "co_pooled",
+      "description": "Auto-discovered pooled job: co_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "c02897f6-1a32-4a92-9ca0-3bb3c04b3097",
+      "name": "da_pooled",
+      "description": "Auto-discovered pooled job: da_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "b7520fe8-0d4a-4ba3-acf8-b421e94d428b",
+      "name": "ds_pooled",
+      "description": "Auto-discovered pooled job: ds_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "0ac97c4f-95ca-492f-894f-8799ccefda28",
+      "name": "dv_pooled",
+      "description": "Auto-discovered pooled job: dv_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "398f84ed-3eb8-4325-aa0b-b04213d98201",
+      "name": "ec_pooled",
+      "description": "Auto-discovered pooled job: ec_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "d600721a-1e0f-474b-b3cd-89e0894886cd",
+      "name": "eg_pooled",
+      "description": "Auto-discovered pooled job: eg_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "4b12a700-e5fc-488f-9e69-be2cfc1f4547",
+      "name": "ex_pooled",
+      "description": "Auto-discovered pooled job: ex_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "4db8095e-eab9-453a-85e6-969c5b105ffe",
+      "name": "fa_pooled",
+      "description": "Auto-discovered pooled job: fa_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "4fe15f84-45dc-44e9-8970-fe3a8d476428",
+      "name": "ho_pooled",
+      "description": "Auto-discovered pooled job: ho_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "cc2d4295-26d8-4c9d-9e31-f6fd589cebf0",
+      "name": "ie_pooled",
+      "description": "Auto-discovered pooled job: ie_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "c7f224d0-f057-4d94-8436-b65a4512863c",
+      "name": "is_pooled",
+      "description": "Auto-discovered pooled job: is_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "52664778-fe9b-4fe7-b3a2-8c3066bd8ad0",
+      "name": "lb_pooled",
+      "description": "Auto-discovered pooled job: lb_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "da0ca1a9-2761-423c-b5c7-66c17ca617e0",
+      "name": "mb_pooled",
+      "description": "Auto-discovered pooled job: mb_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "07b1bb39-caa0-4615-8574-b4afd604d79a",
+      "name": "mh_pooled",
+      "description": "Auto-discovered pooled job: mh_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "14ad87be-5f01-46fc-99b6-abbeb211b284",
+      "name": "pc_pooled",
+      "description": "Auto-discovered pooled job: pc_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "a4fea794-4cd7-49cd-9fe5-8221dc99c1af",
+      "name": "pe_pooled",
+      "description": "Auto-discovered pooled job: pe_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "855292fb-3cd7-4266-925d-d2f5574e413f",
+      "name": "pp_pooled",
+      "description": "Auto-discovered pooled job: pp_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "986c0067-9f94-4a71-b603-2db647ae9562",
+      "name": "pr_pooled",
+      "description": "Auto-discovered pooled job: pr_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "963e6edf-69b3-4213-8f1d-baf50ddaf87d",
+      "name": "suppcm_pooled",
+      "description": "Auto-discovered pooled job: suppcm_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "3a3517c1-8323-482e-b05b-41598289b873",
+      "name": "suppds_pooled",
+      "description": "Auto-discovered pooled job: suppds_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "0c190080-ea13-45f5-8594-74fb34d1db40",
+      "name": "suppec_pooled",
+      "description": "Auto-discovered pooled job: suppec_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "c99810ea-48d9-4f13-b5ce-be8eea311f2a",
+      "name": "suppeg_pooled",
+      "description": "Auto-discovered pooled job: suppeg_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "f827b5b7-8710-4022-9a51-a76438cd353d",
+      "name": "suppho_pooled",
+      "description": "Auto-discovered pooled job: suppho_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "b3b402b0-f4ed-40fd-aee8-e2bf500041a2",
+      "name": "supplb_pooled",
+      "description": "Auto-discovered pooled job: supplb_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "22917218-c54d-461e-95dc-3122e2cfcb9e",
+      "name": "suppmh_pooled",
+      "description": "Auto-discovered pooled job: suppmh_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "aa904def-805d-46ad-9864-1a78c96f202e",
+      "name": "supppp_pooled",
+      "description": "Auto-discovered pooled job: supppp_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "ac47faee-3904-4623-bde5-0a0f62642d35",
+      "name": "sv_pooled",
+      "description": "Auto-discovered pooled job: sv_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "c244356b-492c-4f94-af10-0bdc59ce7d7b",
+      "name": "ti_pooled",
+      "description": "Auto-discovered pooled job: ti_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "450479a3-e302-4715-9493-9b7d484e6036",
+      "name": "tv_pooled",
+      "description": "Auto-discovered pooled job: tv_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "17fe211e-20a8-4566-a27f-ba83d43c0f96",
+      "name": "ve_pooled",
+      "description": "Auto-discovered pooled job: ve_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "4db9828e-e776-4ca6-9edf-b766033028b8",
+      "name": "xd_pooled",
+      "description": "Auto-discovered pooled job: xd_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "e1704f53-8deb-4f2c-8c0e-f1e8d1b09f16",
+      "name": "qs_pooled",
+      "description": "Auto-discovered pooled job: qs_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "aafcfff4-fcfb-40c3-9ca3-67be968c39ed",
+      "name": "relrec_pooled",
+      "description": "Auto-discovered pooled job: relrec_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "8b807d7e-52f2-4bc2-9d25-a9b055ad4cf5",
+      "name": "rp_pooled",
+      "description": "Auto-discovered pooled job: rp_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "85b3280a-1c96-4b0b-86c4-e3d6a9079f80",
+      "name": "se_pooled",
+      "description": "Auto-discovered pooled job: se_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "f9f5747d-2ba0-4643-9081-bd0ec2efd567",
+      "name": "suppae_pooled",
+      "description": "Auto-discovered pooled job: suppae_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "539b76f6-baad-40ce-aa13-3134fde8c47f",
+      "name": "suppda_pooled",
+      "description": "Auto-discovered pooled job: suppda_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "7edd1a98-b717-49e5-a1e6-6581a1108d39",
+      "name": "suppdm_pooled",
+      "description": "Auto-discovered pooled job: suppdm_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "f95a696e-c504-461a-9a47-d80802b1e278",
+      "name": "suppdv_pooled",
+      "description": "Auto-discovered pooled job: suppdv_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "d6de7e8d-5f85-4b49-8cb8-9edbcc26aecd",
+      "name": "suppfa_pooled",
+      "description": "Auto-discovered pooled job: suppfa_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "6323d711-0837-40e5-a21f-44277f97d57c",
+      "name": "suppis_pooled",
+      "description": "Auto-discovered pooled job: suppis_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "57971d75-47af-488a-b17d-23a51aceb9db",
+      "name": "supppc_pooled",
+      "description": "Auto-discovered pooled job: supppc_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "6040d19e-6a10-4589-ba8d-dfd66318f7eb",
+      "name": "supppe_pooled",
+      "description": "Auto-discovered pooled job: supppe_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "56a661b6-f147-4978-94a2-7ff9683dcc29",
+      "name": "supppr_pooled",
+      "description": "Auto-discovered pooled job: supppr_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "f5779239-e1d3-4c92-919d-fe4061d74c66",
+      "name": "suppqs_pooled",
+      "description": "Auto-discovered pooled job: suppqs_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "146d92a0-eb14-49cb-bfc8-35cdc1d75b88",
+      "name": "suppve_pooled",
+      "description": "Auto-discovered pooled job: suppve_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "f84f018e-1fe6-4112-a861-6e515390453a",
+      "name": "suppvs_pooled",
+      "description": "Auto-discovered pooled job: suppvs_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "f3dfc20b-727d-4a17-bb69-7011ef8ad5b9",
+      "name": "dm_pooled",
+      "description": "Auto-discovered pooled job: dm_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "d770b633-e0fb-496e-a182-8f25c49228d1",
+      "name": "ta_pooled",
+      "description": "Auto-discovered pooled job: ta_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "fe148166-d554-4b9c-bcf2-720c2e0b0cf9",
+      "name": "te_pooled",
+      "description": "Auto-discovered pooled job: te_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "548da3ef-1c0c-4750-a78b-bb4cd95c62c9",
+      "name": "ts_pooled",
+      "description": "Auto-discovered pooled job: ts_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    },
+    {
+      "definition_id": "24537516-2a82-4d05-877a-9d602987033b",
+      "name": "vs_pooled",
+      "description": "Auto-discovered pooled job: vs_pooled",
+      "arguments": {},
+      "context_name": "Autoscaling POC Context",
+      "enabled": true
+    }
+  ],
+  "settings": {
+    "max_concurrent_jobs": 3,
+    "base_url": "https://xarprodviya.ondemand.sas.com"
+  },
+  "metadata": {
+    "generated_at": "2025-09-09T23:35:28.729715",
+    "discovery_pattern": "*_pooled",
+    "total_jobs_found": 54,
+    "enabled_jobs": 54,
+    "disabled_jobs": 0
+  }
+}
