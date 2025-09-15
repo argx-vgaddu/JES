@@ -29,10 +29,49 @@ cd JES
 pip install -r requirements.txt
 ```
 
-### Authentication
+### Authentication Setup
+The system uses OAuth2 authentication with SAS Viya. Before running jobs, you need to set up authentication:
+
+#### 1. Environment Configuration
 ```powershell
-# Get/refresh your SAS Viya access tokens
+# Copy the environment template
+copy env.template .env
+
+# Edit .env with your SAS Viya credentials:
+# - SAS_VIYA_BASE_URL=https://your-viya-server.com
+# - SAS_VIYA_CLIENT_ID=your_client_id
+# - SAS_VIYA_USERNAME=your_username
+# - SAS_VIYA_PASSWORD=your_password
+```
+
+#### 2. Get Authentication Tokens
+```powershell
+# Run the authentication script
 .\.venv\Scripts\python.exe src\jes\auth.py
+```
+
+**What happens during authentication:**
+1. **Browser Authorization**: Opens your browser to SAS Viya login page
+2. **Manual Code Capture**: After login, copy the authorization code from the redirect URL
+3. **Token Exchange**: System exchanges the code for access and refresh tokens
+4. **Auto-Save**: Tokens are saved to `data/sas_tokens.json` for future use
+
+#### 3. Authentication Flow Details
+- **OAuth2 Authorization Code Flow**: Industry-standard security protocol
+- **Automatic Token Refresh**: System automatically refreshes expired tokens
+- **Token Persistence**: Tokens are saved locally and reused across sessions
+- **Smart Management**: Only re-authenticates when tokens are invalid or expired
+
+#### 4. Token Management
+```powershell
+# Tokens are automatically managed, but you can manually refresh if needed:
+.\.venv\Scripts\python.exe src\jes\auth.py
+
+# Check token status in data/sas_tokens.json:
+# - access_token: Used for API calls (expires in ~24 hours)
+# - refresh_token: Used to get new access tokens (expires in ~14 days)
+# - expires_at: When access token expires
+# - refresh_expires_at: When refresh token expires
 ```
 
 ## 🎮 Running the System
@@ -125,6 +164,48 @@ pip install -r requirements.txt
 | `--sequential-only` | Skip async execution | `False` |
 | `--limit-jobs` | Limit number of jobs to process | `None` (all) |
 
+## 🔐 Authentication Architecture
+
+### OAuth2 Authorization Code Flow
+The system implements the industry-standard OAuth2 authorization code flow for secure SAS Viya authentication:
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Browser   │    │     JES     │    │ SAS Viya    │
+│             │    │   System    │    │   Server    │
+└─────────────┘    └─────────────┘    └─────────────┘
+        │                   │                   │
+        │  1. Auth Request  │                   │
+        │<──────────────────│                   │
+        │                   │                   │
+        │  2. User Login    │                   │
+        │──────────────────────────────────────>│
+        │                   │                   │
+        │  3. Auth Code     │                   │
+        │<──────────────────────────────────────│
+        │                   │                   │
+        │  4. Manual Copy   │                   │
+        │──────────────────>│                   │
+        │                   │                   │
+        │                   │  5. Token Exchange│
+        │                   │──────────────────>│
+        │                   │                   │
+        │                   │  6. Access Token  │
+        │                   │<──────────────────│
+```
+
+### Token Lifecycle Management
+- **Access Token**: Valid for ~24 hours, used for all API calls
+- **Refresh Token**: Valid for ~14 days, used to get new access tokens
+- **Automatic Refresh**: System automatically refreshes tokens 5 minutes before expiry
+- **Persistent Storage**: Tokens saved in `data/sas_tokens.json` for session reuse
+
+### Security Features
+- **No Password Storage**: Only OAuth2 tokens are stored locally
+- **Token Validation**: System tests tokens before use
+- **Automatic Cleanup**: Expired tokens are automatically refreshed or re-authenticated
+- **Secure Transmission**: All authentication uses HTTPS
+
 ## 📊 How It Works
 
 ### Job Naming Pattern
@@ -153,13 +234,14 @@ Orchestrator: cmpooledsequential11757479582-b9deca7d-7056-438c-99c5-5df90ee2a3fb
 JES/
 ├── main.py                    # Main entry point
 ├── src/jes/                   # Core package
-│   ├── auth.py               # Authentication handling
+│   ├── auth.py               # OAuth2 authentication & token management
 │   ├── comparison_runner.py  # Main comparison logic
 │   └── job_execution.py      # SAS Viya API client
 ├── config/                    # Configuration files
 │   └── job_configs.json      # Job definitions (54 pooled jobs)
 ├── data/                      # Runtime data
-│   └── sas_tokens.json       # Access tokens (auto-generated)
+│   └── sas_tokens.json       # OAuth2 tokens (auto-generated)
+├── .env                       # Environment configuration (create from env.template)
 ├── demos/                     # Demo scripts
 │   └── job_orchestrator_metrics_demo.py
 └── results/                   # Output JSON files
@@ -234,9 +316,40 @@ Results are saved to `results/pooled_jobs_comparison_YYYYMMDD_HHMMSS.json`:
 - Check that jobs are appearing in `/workloadOrchestrator/jobs`
 
 **Authentication errors:**
-- Run `python src\jes\auth.py` to refresh tokens
-- Check token expiration in `data/sas_tokens.json`
-- Verify environment access permissions
+
+*Token expired or invalid:*
+```powershell
+# Re-run authentication to get fresh tokens
+.\.venv\Scripts\python.exe src\jes\auth.py
+```
+
+*Browser authorization issues:*
+- Ensure you can access your SAS Viya server in the browser
+- Check that your username/password are correct in `.env`
+- Verify the client_id is properly configured for your SAS Viya instance
+- Make sure you're copying the complete authorization code from the redirect URL
+
+*Environment configuration problems:*
+```powershell
+# Verify your .env file exists and has correct values
+type .env
+
+# Check if environment variables are loading properly
+.\.venv\Scripts\python.exe -c "from src.jes.config import get_config; print(get_config())"
+
+# If you get import errors, make sure you're in the project root directory
+cd C:\Python\JES
+```
+
+*Token refresh failures:*
+- If refresh token is expired (>14 days), you'll need to re-authenticate completely
+- Check `refresh_expires_at` in `data/sas_tokens.json`
+- Delete `data/sas_tokens.json` and re-authenticate if tokens are corrupted
+
+*Network/connectivity issues:*
+- Verify you can reach your SAS Viya server: `ping your-viya-server.com`
+- Check if you're behind a corporate firewall that blocks OAuth flows
+- Ensure your SAS Viya server supports the OAuth2 authorization code flow
 
 **Job submission failures:**
 - Check compute context availability
@@ -275,6 +388,52 @@ The main system includes comprehensive testing through:
 - 100% correlation success rate when jobs exist
 - Supports up to 1500 jobs with pagination
 - 15-second wait ensures orchestrator registration
+
+## 📊 Visualization and Analysis
+
+### PowerPoint-Ready Slides
+Generate presentation-ready slides with embedded analysis:
+
+```powershell
+# Generate PowerPoint slides only
+.\.venv\Scripts\python.exe create_powerpoint_slides.py
+
+# Generate both standard visualizations and PowerPoint slides
+.\.venv\Scripts\python.exe visualize_comparison.py
+```
+
+**PowerPoint slides include:**
+- **Slide 1: Executive Summary** - High-level overview with key metrics and recommendations
+- **Slide 2: Performance Comparison** - Technical analysis with timing breakdowns  
+- **Slide 3: Timeline Analysis** - Visual execution patterns with queue wait times
+- **Slide 4: Resource Analysis** - Node utilization and autoscaling behavior
+- **Slide 5: Business Impact** - ROI analysis and strategic recommendations
+
+All slides use consistent, professional color schemes and include embedded analysis descriptions. Generated slides are saved to `results/powerpoint_slides/` and can be directly inserted into PowerPoint presentations.
+
+### Standard Visualizations
+The system also generates comprehensive standard visualizations:
+- **Executive Dashboard**: High-level summary for decision makers
+- **Execution Time Comparison**: Detailed timing analysis
+- **Job Duration Analysis**: Individual job performance
+- **Success Rate Comparison**: Reliability metrics
+- **Resource Utilization**: CPU/Memory usage patterns
+- **Queue Wait Analysis**: Queue performance comparison
+- **Timeline Visualization**: Execution patterns over time
+- **Node Utilization**: Autoscaling behavior analysis
+- **Performance Heatmap**: Metrics correlation
+- **Cost-Benefit Analysis**: Business value assessment
+
+### Generate Visualizations
+```powershell
+# Generate all visualizations from latest comparison data
+.\.venv\Scripts\python.exe visualize_comparison.py
+
+# Or specify a specific comparison file
+.\.venv\Scripts\python.exe visualize_comparison.py results/pooled_jobs_comparison_20240101_120000.json
+```
+
+All visualizations are saved to the `results/` directory with timestamps.
 
 ## 📊 Metrics Insights
 
