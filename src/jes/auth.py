@@ -168,6 +168,7 @@ class SASViyaAuth:
                     self.tokens['expires_at'] = (now + timedelta(seconds=new_tokens['expires_in'])).isoformat()
                 
                 print("✅ Access token refreshed successfully!")
+                self.save_tokens()  # Save the refreshed tokens to file
                 return self.tokens
             else:
                 print(f"❌ Token refresh failed: {response.status_code}")
@@ -271,7 +272,8 @@ class SASViyaAuth:
 
 def get_sas_tokens():
     """Get SAS tokens with automatic refresh - main entry point"""
-    from .config import get_config
+
+    from config import get_config
     config = get_config()
     
     auth_client = SASViyaAuth(
@@ -293,7 +295,10 @@ def get_sas_tokens():
 
 def create_auth_client():
     """Create and return a configured auth client"""
-    from .config import get_config
+    try:
+        from .config import get_config
+    except ImportError:
+        from config import get_config
     config = get_config()
     
     return SASViyaAuth(
@@ -306,7 +311,10 @@ def create_auth_client():
 
 def main():
     """Main function for standalone authentication"""
-    from .config import get_config, validate_env_file
+    try:
+        from .config import get_config, validate_env_file
+    except ImportError:
+        from config import get_config, validate_env_file
     
     print("🚀 SAS Viya Authentication - Smart Token Management")
     print("=" * 55)
