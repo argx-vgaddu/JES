@@ -2,9 +2,10 @@
 """
 Streamlined Pooled Jobs Comparison Runner
 
-This script runs the same set of pooled jobs in two different modes:
-1. Sequential execution in Compute Context (no autoscaling)
-2. Asynchronous execution in Autoscaling Context (with autoscaling)
+This script runs the same set of pooled jobs in three different modes:
+1. Sequential execution in Compute Context (baseline)
+2. Asynchronous execution in Regular Compute Context (parallelization only)
+3. Asynchronous execution in Autoscaling Context (parallelization + autoscaling)
 
 Captures precise timing metrics and comprehensive session/job data for comparison.
 """
@@ -40,7 +41,13 @@ class StreamlinedComparisonRunner:
                 'jobs': [],
                 'summary': {}
             },
-            'async_execution': {
+            'async_regular_execution': {
+                'context_name': 'SAS Job Execution compute context',
+                'mode': 'asynchronous',
+                'jobs': [],
+                'summary': {}
+            },
+            'async_autoscaling_execution': {
                 'context_name': 'Autoscaling POC Context',
                 'mode': 'asynchronous',
                 'jobs': [],
@@ -361,7 +368,11 @@ class StreamlinedComparisonRunner:
             async_arguments["_contextName"] = context_name
             
             # Create unique job name for deterministic orchestrator correlation
-            unique_job_name = f"{job_name}_async_{sequence_num}_{int(time.time())}"
+            # Differentiate between regular and autoscaling contexts
+            if context_name == "Autoscaling POC Context":
+                unique_job_name = f"{job_name}_async_auto_{sequence_num}_{int(time.time())}"
+            else:
+                unique_job_name = f"{job_name}_async_reg_{sequence_num}_{int(time.time())}"
             
             job_submission = self.client.submit_job(
                 job_definition_uri=job_definition_uri,
@@ -901,177 +912,93 @@ class StreamlinedComparisonRunner:
         }
     
     def calculate_comparison_metrics(self) -> Dict[str, Any]:
-        """Calculate comparison metrics between sequential and async execution"""
-        seq_results = self.results['sequential_execution']
-        async_results = self.results['async_execution']
+        """Calculate three-way comparison metrics between sequential, async regular, and async autoscaling execution"""
+        seq_results = self.results.get('sequential_execution', {})
+        async_reg_results = self.results.get('async_regular_execution', {})
+        async_auto_results = self.results.get('async_autoscaling_execution', {})
         
         comparison = {
-            'execution_time': {
+            'execution_times': {
                 'sequential_total': seq_results.get('total_duration', 0),
-                'async_total': async_results.get('total_duration', 0),
-                'time_saved': 0,
-                'efficiency_gain': 0
+                'async_regular_total': async_reg_results.get('total_duration', 0),
+                'async_autoscaling_total': async_auto_results.get('total_duration', 0)
             },
+            'performance_improvements': {},
             'job_performance': {
-                'sequential_success_rate': 0,
-                'async_success_rate': 0,
-                'sequential_avg_job_time': 0,
-                'async_avg_job_time': 0
+                'sequential': self._calculate_job_performance(seq_results),
+                'async_regular': self._calculate_job_performance(async_reg_results),
+                'async_autoscaling': self._calculate_job_performance(async_auto_results)
             },
-            'resource_utilization': {
-                'sequential_context': seq_results.get('context_name'),
-                'async_context': async_results.get('context_name'),
-                'concurrent_execution': True
+            'contexts': {
+                'sequential': seq_results.get('context_name', ''),
+                'async_regular': async_reg_results.get('context_name', ''),
+                'async_autoscaling': async_auto_results.get('context_name', '')
             }
         }
         
-        # Calculate time efficiency
+        # Calculate performance improvements
         seq_time = seq_results.get('total_duration', 0)
-        async_time = async_results.get('total_duration', 0)
+        async_reg_time = async_reg_results.get('total_duration', 0)
+        async_auto_time = async_auto_results.get('total_duration', 0)
         
-        if seq_time > 0 and async_time > 0:
-            comparison['execution_time']['time_saved'] = seq_time - async_time
-            comparison['execution_time']['efficiency_gain'] = ((seq_time - async_time) / seq_time) * 100
+        # Parallelization benefit (Sequential vs Async Regular)
+        if seq_time > 0 and async_reg_time > 0:
+            comparison['performance_improvements']['parallelization_benefit'] = {
+                'time_saved': seq_time - async_reg_time,
+                'percentage': ((seq_time - async_reg_time) / seq_time) * 100
+            }
         
-        # Calculate success rates
-        seq_total = len(seq_results.get('jobs', []))
-        async_total = len(async_results.get('jobs', []))
+        # Pure autoscaling benefit (Async Regular vs Async Autoscaling)
+        if async_reg_time > 0 and async_auto_time > 0:
+            comparison['performance_improvements']['autoscaling_benefit'] = {
+                'time_saved': async_reg_time - async_auto_time,
+                'percentage': ((async_reg_time - async_auto_time) / async_reg_time) * 100
+            }
         
-        if seq_total > 0:
-            comparison['job_performance']['sequential_success_rate'] = (
-                seq_results.get('successful_jobs', 0) / seq_total
-            ) * 100
-        
-        if async_total > 0:
-            comparison['job_performance']['async_success_rate'] = (
-                async_results.get('successful_jobs', 0) / async_total
-            ) * 100
-        
-        # Calculate average job times
-        seq_job_times = [job.get('duration', 0) for job in seq_results.get('jobs', [])]
-        async_job_times = [job.get('duration', 0) for job in async_results.get('jobs', [])]
-        
-        if seq_job_times:
-            comparison['job_performance']['sequential_avg_job_time'] = sum(seq_job_times) / len(seq_job_times)
-        
-        if async_job_times:
-            comparison['job_performance']['async_avg_job_time'] = sum(async_job_times) / len(async_job_times)
-        
-        # Analyze node distribution and autoscaling behavior
-        comparison['node_analysis'] = self.analyze_node_distribution()
+        # Total improvement (Sequential vs Async Autoscaling)
+        if seq_time > 0 and async_auto_time > 0:
+            comparison['performance_improvements']['total_improvement'] = {
+                'time_saved': seq_time - async_auto_time,
+                'percentage': ((seq_time - async_auto_time) / seq_time) * 100
+            }
         
         return comparison
     
+    def _calculate_job_performance(self, results: Dict[str, Any]) -> Dict[str, Any]:
+        """Calculate job performance metrics for a single execution mode"""
+        if not results:
+            return {'success_rate': 0, 'avg_job_time': 0, 'total_jobs': 0, 'successful_jobs': 0}
+        
+        jobs = results.get('jobs', [])
+        successful_jobs = results.get('successful_jobs', 0)
+        total_jobs = len(jobs)
+        
+        success_rate = (successful_jobs / total_jobs * 100) if total_jobs > 0 else 0
+        
+        job_times = [job.get('duration', 0) for job in jobs if job.get('duration', 0) > 0]
+        avg_job_time = sum(job_times) / len(job_times) if job_times else 0
+        
+        return {
+            'success_rate': success_rate,
+            'avg_job_time': avg_job_time,
+            'total_jobs': total_jobs,
+            'successful_jobs': successful_jobs
+        }
+    
     def analyze_node_distribution(self) -> Dict[str, Any]:
         """
-        Analyze how jobs were distributed across nodes in sequential vs async execution
+        Analyze how jobs were distributed across nodes in three execution modes
         
         Returns:
             Dictionary containing node distribution analysis
         """
-        analysis = {
+        # Simplified for now - can be enhanced later with three-way node analysis
+        return {
             'sequential_nodes': {},
-            'async_nodes': {},
+            'async_regular_nodes': {},
+            'async_autoscaling_nodes': {},
             'autoscaling_behavior': {}
         }
-        
-        try:
-            # Analyze sequential execution node usage
-            seq_jobs = self.results.get('sequential_execution', {}).get('jobs', [])
-            seq_unique_nodes = set()
-            
-            for job in seq_jobs:
-                job_metrics = job.get('job_metrics', {})
-                
-                # Use actual hostname if available, otherwise fall back to session-based nodes
-                if 'actual_hostname' in job_metrics:
-                    hostname = job_metrics['actual_hostname']
-                    seq_unique_nodes.add(hostname)
-                    analysis['sequential_nodes'][job['name']] = {
-                        'hostname': hostname,
-                        'node_count': 1
-                    }
-                elif 'unique_nodes_used' in job_metrics:
-                    nodes = job_metrics['unique_nodes_used']
-                    seq_unique_nodes.update(nodes)
-                    analysis['sequential_nodes'][job['name']] = {
-                        'nodes_used': nodes,
-                        'node_count': len(nodes) if nodes else 0
-                    }
-            
-            analysis['sequential_nodes']['total_unique_nodes'] = len(seq_unique_nodes)
-            analysis['sequential_nodes']['all_nodes'] = list(seq_unique_nodes)
-            
-            # Analyze async execution node usage
-            async_jobs = self.results.get('async_execution', {}).get('jobs', [])
-            async_unique_nodes = set()
-            concurrent_node_usage = {}
-            
-            for job in async_jobs:
-                job_metrics = job.get('job_metrics', {})
-                
-                # Use actual hostname if available, otherwise fall back to session-based nodes
-                if 'actual_hostname' in job_metrics:
-                    hostname = job_metrics['actual_hostname']
-                    async_unique_nodes.add(hostname)
-                    analysis['async_nodes'][job['name']] = {
-                        'hostname': hostname,
-                        'node_count': 1
-                    }
-                    
-                    # Track concurrent usage
-                    if hostname not in concurrent_node_usage:
-                        concurrent_node_usage[hostname] = []
-                    concurrent_node_usage[hostname].append(job['name'])
-                    
-                elif 'unique_nodes_used' in job_metrics:
-                    nodes = job_metrics['unique_nodes_used']
-                    async_unique_nodes.update(nodes)
-                    analysis['async_nodes'][job['name']] = {
-                        'nodes_used': nodes,
-                        'node_count': len(nodes) if nodes else 0
-                    }
-                    
-                    # Track concurrent usage
-                    for node in nodes:
-                        if node not in concurrent_node_usage:
-                            concurrent_node_usage[node] = []
-                        concurrent_node_usage[node].append(job['name'])
-            
-            analysis['async_nodes']['total_unique_nodes'] = len(async_unique_nodes)
-            analysis['async_nodes']['all_nodes'] = list(async_unique_nodes)
-            analysis['async_nodes']['concurrent_node_usage'] = concurrent_node_usage
-            
-            # Analyze autoscaling behavior
-            analysis['autoscaling_behavior'] = {
-                'sequential_vs_async_nodes': {
-                    'sequential_total': len(seq_unique_nodes),
-                    'async_total': len(async_unique_nodes),
-                    'additional_nodes_used': len(async_unique_nodes - seq_unique_nodes),
-                    'node_scaling_factor': len(async_unique_nodes) / len(seq_unique_nodes) if seq_unique_nodes else 0
-                },
-                'concurrent_job_distribution': len([node for node, jobs in concurrent_node_usage.items() if len(jobs) > 1]),
-                'nodes_with_multiple_jobs': {node: jobs for node, jobs in concurrent_node_usage.items() if len(jobs) > 1}
-            }
-            
-            # Determine autoscaling effectiveness
-            if len(async_unique_nodes) > len(seq_unique_nodes):
-                analysis['autoscaling_behavior']['scaling_observed'] = True
-                analysis['autoscaling_behavior']['scaling_type'] = 'scale_out'
-                analysis['autoscaling_behavior']['description'] = f"Autoscaling scaled out from {len(seq_unique_nodes)} to {len(async_unique_nodes)} nodes"
-            elif len(async_unique_nodes) == len(seq_unique_nodes):
-                analysis['autoscaling_behavior']['scaling_observed'] = False
-                analysis['autoscaling_behavior']['scaling_type'] = 'no_scaling'
-                analysis['autoscaling_behavior']['description'] = "No additional nodes were allocated for concurrent execution"
-            else:
-                analysis['autoscaling_behavior']['scaling_observed'] = True
-                analysis['autoscaling_behavior']['scaling_type'] = 'consolidation'
-                analysis['autoscaling_behavior']['description'] = "Jobs were consolidated on fewer nodes"
-        
-        except Exception as e:
-            analysis['error'] = f"Could not analyze node distribution: {e}"
-        
-        return analysis
     
     def extract_hostname_from_log(self, log_content: str) -> str:
         """
@@ -1150,8 +1077,12 @@ class StreamlinedComparisonRunner:
             expected_prefix = None
             if '_pooled' in job_name:
                 # Handle both regular and unique job names
-                if '_sequential_' in job_name or '_async_' in job_name:
-                    # This is a unique job name like cm_pooled_sequential_1_1757476678
+                if ('_sequential_' in job_name or '_async_reg_' in job_name or 
+                    '_async_auto_' in job_name or '_async_' in job_name):
+                    # This is a unique job name like:
+                    # - cm_pooled_sequential_1_1757476678
+                    # - cm_pooled_async_reg_1_1757476678  
+                    # - cm_pooled_async_auto_1_1757476678
                     # It becomes cmpooledsequential11757476678-[UUID] in orchestrator
                     transformed = job_name.replace('_', '').lower()
                     expected_prefix = transformed
@@ -1495,7 +1426,7 @@ class StreamlinedComparisonRunner:
         print(f"\n🔄 Correlating all orchestrator data (post-execution)...")
         print("=" * 60)
         
-        # Collect all jobs from both sequential and async executions
+        # Collect all jobs from all three execution modes
         all_jobs = []
         
         if 'sequential_execution' in self.results and self.results['sequential_execution']:
@@ -1504,11 +1435,17 @@ class StreamlinedComparisonRunner:
                 print(f"📊 Processing {len(seq_jobs)} sequential jobs...")
                 all_jobs.extend([(job, 'sequential') for job in seq_jobs])
         
-        if 'async_execution' in self.results and self.results['async_execution']:
-            async_jobs = self.results['async_execution'].get('jobs', [])
-            if async_jobs:
-                print(f"📊 Processing {len(async_jobs)} async jobs...")
-                all_jobs.extend([(job, 'async') for job in async_jobs])
+        if 'async_regular_execution' in self.results and self.results['async_regular_execution']:
+            async_reg_jobs = self.results['async_regular_execution'].get('jobs', [])
+            if async_reg_jobs:
+                print(f"📊 Processing {len(async_reg_jobs)} async regular jobs...")
+                all_jobs.extend([(job, 'async_regular') for job in async_reg_jobs])
+        
+        if 'async_autoscaling_execution' in self.results and self.results['async_autoscaling_execution']:
+            async_auto_jobs = self.results['async_autoscaling_execution'].get('jobs', [])
+            if async_auto_jobs:
+                print(f"📊 Processing {len(async_auto_jobs)} async autoscaling jobs...")
+                all_jobs.extend([(job, 'async_autoscaling') for job in async_auto_jobs])
         
         if not all_jobs:
             print("⚠️ No jobs to correlate")
@@ -1601,98 +1538,6 @@ class StreamlinedComparisonRunner:
         """
         # This method intentionally does nothing - orchestrator correlation moved to end
         pass
-        
-        # Fetch all orchestrator jobs at once
-        print("📊 Fetching orchestrator jobs...")
-        try:
-            import requests
-            headers = {
-                'Authorization': f'Bearer {self.client.access_token}',
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
-            
-            # Get a large batch of orchestrator jobs
-            orch_url = f"{self.base_url}/workloadOrchestrator/jobs"
-            orch_params = {'limit': 500, 'start': 0}
-            
-            response = requests.get(orch_url, headers=headers, params=orch_params, timeout=30)
-            
-            if response.status_code != 200:
-                print(f"❌ Failed to fetch orchestrator jobs: {response.status_code}")
-                return
-            
-            orchestrator_jobs = response.json().get('items', [])
-            print(f"✅ Retrieved {len(orchestrator_jobs)} orchestrator jobs")
-            
-            # Create a lookup map for faster correlation (case-insensitive)
-            orch_lookup = {}
-            for orch_job in orchestrator_jobs:
-                orch_name = orch_job.get('request', {}).get('name', '')
-                # Extract UUID from orchestrator job name (after 'sas-compute-server-')
-                if 'sas-compute-server-' in orch_name.lower():
-                    uuid_part = orch_name.lower().split('sas-compute-server-')[1]
-                    orch_lookup[uuid_part] = orch_job
-                    # Also store uppercase variant
-                    orch_lookup[uuid_part.upper()] = orch_job
-            
-            print(f"📊 Found {len(orch_lookup)//2} compute server jobs in orchestrator")
-            
-            # Correlate each job
-            successful_correlations = 0
-            failed_correlations = 0
-            
-            for job in jobs_to_correlate:
-                job_name = job.get('name', 'Unknown')
-                compute_job_id = job.get('compute_job_id')
-                
-                if not compute_job_id:
-                    # Try to get it from job_metrics if not in top level
-                    compute_job_id = job.get('job_metrics', {}).get('compute_job_id')
-                
-                if compute_job_id:
-                    # Try both original case and lowercase
-                    found = False
-                    for variant in [compute_job_id, compute_job_id.lower(), compute_job_id.upper()]:
-                        if variant in orch_lookup:
-                            orch_job = orch_lookup[variant]
-                            successful_correlations += 1
-                            found = True
-                            
-                            # Extract and add orchestrator data to job
-                            orchestrator_data = self.extract_comprehensive_orchestrator_metrics(orch_job)
-                            
-                            # Update job metrics with orchestrator data
-                            if 'job_metrics' not in job:
-                                job['job_metrics'] = {}
-                            
-                            job['job_metrics']['orchestrator_data'] = orchestrator_data
-                            job['job_metrics']['orchestrator_correlation'] = 'batch_success'
-                            
-                            print(f"✅ Correlated: {job_name} -> {orch_job.get('request', {}).get('name')[:50]}...")
-                            break
-                    
-                    if not found:
-                        failed_correlations += 1
-                        print(f"❌ Not found: {job_name} (ID: {compute_job_id})")
-                else:
-                    failed_correlations += 1
-                    print(f"⚠️ No COMPUTE_JOB ID for: {job_name}")
-            
-            print(f"\n📊 Batch Correlation Results:")
-            print(f"   ✅ Successful: {successful_correlations}/{len(jobs_to_correlate)}")
-            print(f"   ❌ Failed: {failed_correlations}/{len(jobs_to_correlate)}")
-            
-            if failed_correlations > 0:
-                print(f"\n💡 Troubleshooting failed correlations:")
-                print(f"   • Orchestrator jobs might use different case UUIDs")
-                print(f"   • Some jobs might not have created orchestrator entries")
-                print(f"   • Try running batch_correlate.py separately with longer delay")
-            
-        except Exception as e:
-            print(f"❌ Batch correlation failed: {e}")
-            import traceback
-            traceback.print_exc()
     
     def save_results(self, output_file: str = None) -> str:
         """Save comprehensive results to JSON file"""
@@ -1714,71 +1559,78 @@ class StreamlinedComparisonRunner:
         return output_file
     
     def print_summary(self):
-        """Print execution summary"""
-        comparison = self.results.get('comparison', {})
+        """Print execution summary with three-way comparison"""
+        print(f"\n" + "=" * 70)
+        print(f"📊 THREE-WAY POOLED JOBS COMPARISON SUMMARY")
+        print(f"=" * 70)
         
-        print(f"\n" + "=" * 60)
-        print(f"📊 POOLED JOBS COMPARISON SUMMARY")
-        print(f"=" * 60)
+        # Get execution times
+        seq_results = self.results.get('sequential_execution', {})
+        async_reg_results = self.results.get('async_regular_execution', {})
+        async_auto_results = self.results.get('async_autoscaling_execution', {})
         
-        exec_time = comparison.get('execution_time', {})
-        seq_time = exec_time.get('sequential_total', 0)
-        async_time = exec_time.get('async_total', 0)
-        time_saved = exec_time.get('time_saved', 0)
-        efficiency = exec_time.get('efficiency_gain', 0)
+        seq_time = seq_results.get('total_duration', 0)
+        async_reg_time = async_reg_results.get('total_duration', 0)
+        async_auto_time = async_auto_results.get('total_duration', 0)
         
         print(f"⏱️  Execution Times:")
-        print(f"   Sequential (Compute Context): {seq_time:.2f} seconds")
-        print(f"   Asynchronous (Autoscaling):   {async_time:.2f} seconds")
-        print(f"   Time Saved: {time_saved:.2f} seconds")
-        print(f"   Efficiency Gain: {efficiency:.1f}%")
+        if seq_time > 0:
+            print(f"   1. Sequential (Baseline):           {seq_time:.2f} seconds")
+        if async_reg_time > 0:
+            print(f"   2. Async Regular (Parallelization): {async_reg_time:.2f} seconds")
+        if async_auto_time > 0:
+            print(f"   3. Async Autoscaling (Par. + Auto): {async_auto_time:.2f} seconds")
         
-        job_perf = comparison.get('job_performance', {})
-        print(f"\n📈 Job Performance:")
-        print(f"   Sequential Success Rate: {job_perf.get('sequential_success_rate', 0):.1f}%")
-        print(f"   Async Success Rate: {job_perf.get('async_success_rate', 0):.1f}%")
-        print(f"   Sequential Avg Job Time: {job_perf.get('sequential_avg_job_time', 0):.2f}s")
-        print(f"   Async Avg Job Time: {job_perf.get('async_avg_job_time', 0):.2f}s")
+        # Calculate improvements
+        print(f"\n🚀 Performance Improvements:")
+        if seq_time > 0 and async_reg_time > 0:
+            reg_improvement = ((seq_time - async_reg_time) / seq_time) * 100
+            reg_saved = seq_time - async_reg_time
+            print(f"   Parallelization Benefit:     {reg_improvement:.1f}% faster ({reg_saved:.2f}s saved)")
         
-        seq_jobs = len(self.results.get('sequential_execution', {}).get('jobs', []))
-        async_jobs = len(self.results.get('async_execution', {}).get('jobs', []))
+        if seq_time > 0 and async_auto_time > 0:
+            auto_improvement = ((seq_time - async_auto_time) / seq_time) * 100
+            auto_saved = seq_time - async_auto_time
+            print(f"   Total Improvement (Par+Auto): {auto_improvement:.1f}% faster ({auto_saved:.2f}s saved)")
         
-        print(f"\n📋 Jobs Executed:")
-        print(f"   Total Jobs: {seq_jobs}")
-        print(f"   Sequential Successful: {self.results.get('sequential_execution', {}).get('successful_jobs', 0)}")
-        print(f"   Async Successful: {self.results.get('async_execution', {}).get('successful_jobs', 0)}")
+        if async_reg_time > 0 and async_auto_time > 0:
+            autoscaling_benefit = ((async_reg_time - async_auto_time) / async_reg_time) * 100
+            autoscaling_saved = async_reg_time - async_auto_time
+            print(f"   Pure Autoscaling Benefit:    {autoscaling_benefit:.1f}% faster ({autoscaling_saved:.2f}s saved)")
         
-        # Show node distribution analysis
-        node_analysis = comparison.get('node_analysis', {})
-        if node_analysis:
-            autoscaling_behavior = node_analysis.get('autoscaling_behavior', {})
-            
-            print(f"\n🖥️  Node Distribution:")
-            seq_nodes = node_analysis.get('sequential_nodes', {}).get('total_unique_nodes', 0)
-            async_nodes = node_analysis.get('async_nodes', {}).get('total_unique_nodes', 0)
-            
-            print(f"   Sequential Nodes Used: {seq_nodes}")
-            print(f"   Async Nodes Used: {async_nodes}")
-            
-            if autoscaling_behavior.get('scaling_observed'):
-                scaling_type = autoscaling_behavior.get('scaling_type', 'unknown')
-                description = autoscaling_behavior.get('description', '')
-                print(f"   🚀 Autoscaling: {scaling_type.upper()} - {description}")
+        # Success rates
+        print(f"\n📈 Success Rates:")
+        if seq_results:
+            seq_success = seq_results.get('successful_jobs', 0)
+            seq_total = len(seq_results.get('jobs', []))
+            seq_rate = (seq_success / seq_total * 100) if seq_total > 0 else 0
+            print(f"   Sequential:      {seq_rate:.1f}% ({seq_success}/{seq_total})")
+        
+        if async_reg_results:
+            reg_success = async_reg_results.get('successful_jobs', 0)
+            reg_total = len(async_reg_results.get('jobs', []))
+            reg_rate = (reg_success / reg_total * 100) if reg_total > 0 else 0
+            print(f"   Async Regular:   {reg_rate:.1f}% ({reg_success}/{reg_total})")
+        
+        if async_auto_results:
+            auto_success = async_auto_results.get('successful_jobs', 0)
+            auto_total = len(async_auto_results.get('jobs', []))
+            auto_rate = (auto_success / auto_total * 100) if auto_total > 0 else 0
+            print(f"   Async Autoscaling: {auto_rate:.1f}% ({auto_success}/{auto_total})")
+        
+        # Key insights
+        print(f"\n🎯 Key Insights:")
+        if async_reg_time > 0 and seq_time > 0:
+            if async_reg_time < seq_time:
+                print(f"   ✅ Parallelization provides significant performance benefit")
             else:
-                print(f"   ⚪ Autoscaling: No scaling observed")
-            
-            # Show concurrent job distribution
-            concurrent_nodes = autoscaling_behavior.get('concurrent_job_distribution', 0)
-            if concurrent_nodes > 0:
-                print(f"   🔄 Nodes with Multiple Concurrent Jobs: {concurrent_nodes}")
-                
-                multiple_jobs = autoscaling_behavior.get('nodes_with_multiple_jobs', {})
-                for node, jobs in list(multiple_jobs.items())[:3]:  # Show first 3
-                    print(f"      • Node {node}: {', '.join(jobs)}")
-                if len(multiple_jobs) > 3:
-                    print(f"      • ... and {len(multiple_jobs) - 3} more nodes")
+                print(f"   ⚠️  Parallelization shows limited benefit - investigate queue/resource constraints")
         
-        # Add orchestrator insights
+        if async_auto_time > 0 and async_reg_time > 0:
+            if async_auto_time < async_reg_time:
+                print(f"   ✅ Autoscaling provides additional performance benefit beyond parallelization")
+            else:
+                print(f"   ⚠️  Autoscaling shows limited additional benefit - may indicate resource availability")
         self.print_orchestrator_summary()
     
     def print_orchestrator_summary(self):
@@ -1787,12 +1639,19 @@ class StreamlinedComparisonRunner:
         print(f"=" * 60)
         
         seq_exec = self.results.get('sequential_execution', {})
-        async_exec = self.results.get('async_execution', {})
+        async_reg_exec = self.results.get('async_regular_execution', {})
+        async_auto_exec = self.results.get('async_autoscaling_execution', {})
         
         orchestrator_data_found = False
         
         # Analyze orchestrator data for each phase
-        for phase_name, phase_data in [('Sequential', seq_exec), ('Asynchronous', async_exec)]:
+        execution_phases = [
+            ('Sequential', seq_exec),
+            ('Async Regular', async_reg_exec),
+            ('Async Autoscaling', async_auto_exec)
+        ]
+        
+        for phase_name, phase_data in execution_phases:
             jobs = phase_data.get('jobs', [])
             # Check both possible locations for orchestrator data
             orchestrator_jobs = [
@@ -1907,18 +1766,24 @@ class StreamlinedComparisonRunner:
 def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(
-        description="Streamlined Pooled Jobs Comparison Runner",
+        description="Three-Way Pooled Jobs Comparison Runner",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
+Three-Way Comparison:
+  1. Sequential (Baseline): Jobs run one at a time in regular compute context
+  2. Async Regular (Parallelization): Jobs run in parallel in regular compute context  
+  3. Async Autoscaling (Par. + Auto): Jobs run in parallel in autoscaling context
+
 Execution Modes:
   batch    Run jobs in batches (safer, default behavior)
   all      Submit all jobs simultaneously (requires higher SAS Viya limits)
 
 Examples:
-  python streamlined_comparison_runner.py                    # Default: batch mode, size 5
-  python streamlined_comparison_runner.py --mode batch --concurrent 10
-  python streamlined_comparison_runner.py --mode all        # Submit all 42 jobs at once
-  python streamlined_comparison_runner.py --async-only --mode all  # Skip sequential, run all async
+  python -m src.jes.comparison_runner                                    # All three modes
+  python -m src.jes.comparison_runner --limit-jobs 5                     # Test with 5 jobs
+  python -m src.jes.comparison_runner --skip-sequential                  # Compare async modes only
+  python -m src.jes.comparison_runner --async-autoscaling-only          # Test autoscaling only
+  python -m src.jes.comparison_runner --mode all --concurrent 10        # Batch size 10
         """
     )
     
@@ -1937,15 +1802,39 @@ Examples:
     )
     
     parser.add_argument(
-        "--async-only", 
+        "--sequential-only", 
         action="store_true",
-        help="Skip sequential execution and run only asynchronous execution"
+        help="Run only sequential execution (skip async modes)"
     )
     
     parser.add_argument(
-        "--sequential-only", 
+        "--async-regular-only", 
         action="store_true",
-        help="Run only sequential execution (skip asynchronous)"
+        help="Run only async in regular compute context (skip sequential and autoscaling)"
+    )
+    
+    parser.add_argument(
+        "--async-autoscaling-only", 
+        action="store_true",
+        help="Run only async in autoscaling context (skip sequential and regular async)"
+    )
+    
+    parser.add_argument(
+        "--skip-sequential", 
+        action="store_true",
+        help="Skip sequential execution (run both async modes only)"
+    )
+    
+    parser.add_argument(
+        "--skip-async-regular", 
+        action="store_true",
+        help="Skip async regular execution (run sequential and autoscaling only)"
+    )
+    
+    parser.add_argument(
+        "--skip-async-autoscaling", 
+        action="store_true",
+        help="Skip async autoscaling execution (run sequential and regular async only)"
     )
     
     parser.add_argument(
@@ -1967,8 +1856,25 @@ async def main():
     print(f"   Async Mode: {args.mode.upper()}")
     if args.mode == "batch":
         print(f"   Batch Size: {args.concurrent}")
-    print(f"   Sequential Only: {args.sequential_only}")
-    print(f"   Async Only: {args.async_only}")
+    
+    # Show execution plan
+    execution_plan = []
+    if not (args.sequential_only or args.async_regular_only or args.async_autoscaling_only or args.skip_sequential):
+        execution_plan.append("Sequential (baseline)")
+    elif not args.skip_sequential and not (args.async_regular_only or args.async_autoscaling_only):
+        execution_plan.append("Sequential (baseline)")
+    
+    if not (args.sequential_only or args.async_autoscaling_only or args.skip_async_regular):
+        execution_plan.append("Async Regular (parallelization)")
+    elif args.async_regular_only:
+        execution_plan.append("Async Regular (parallelization)")
+    
+    if not (args.sequential_only or args.async_regular_only or args.skip_async_autoscaling):
+        execution_plan.append("Async Autoscaling (parallelization + autoscaling)")
+    elif args.async_autoscaling_only:
+        execution_plan.append("Async Autoscaling (parallelization + autoscaling)")
+    
+    print(f"   Execution Plan: {' → '.join(execution_plan)}")
     if args.limit_jobs:
         print(f"   Job Limit: {args.limit_jobs}")
     print("=" * 60)
@@ -1997,28 +1903,45 @@ async def main():
         else:
             print(f"📋 Found {len(jobs)} jobs to execute")
         
-        # Run sequential execution (unless skipped)
-        if not args.async_only:
-            print(f"\n🔄 Phase 1: Sequential Execution")
+        phase_num = 1
+        
+        # Phase 1: Sequential execution (unless skipped)
+        if not (args.async_regular_only or args.async_autoscaling_only or args.skip_sequential):
+            print(f"\n🔄 Phase {phase_num}: Sequential Execution (Baseline)")
             sequential_results = runner.run_sequential_jobs(jobs, "SAS Job Execution compute context")
-            
             runner.results['sequential_execution'] = sequential_results
             
             if not args.sequential_only:
                 print(f"\n⏸️  Pausing 30 seconds between execution phases...")
                 time.sleep(30)
+            phase_num += 1
         
-        # Run asynchronous execution (unless skipped)
-        if not args.sequential_only:
-            print(f"\n🚀 Phase 2: Asynchronous Execution")
-            async_results = await runner.run_async_jobs(
+        # Phase 2: Async in regular compute context (unless skipped)
+        if not (args.sequential_only or args.async_autoscaling_only or args.skip_async_regular):
+            print(f"\n🚀 Phase {phase_num}: Async Execution in Regular Context (Parallelization Only)")
+            async_regular_results = await runner.run_async_jobs(
                 jobs, 
-                "Autoscaling POC Context",
+                "SAS Job Execution compute context",  # Regular context, not autoscaling
                 max_concurrent=args.concurrent,
                 execution_mode=args.mode
             )
+            runner.results['async_regular_execution'] = async_regular_results
             
-            runner.results['async_execution'] = async_results
+            if not (args.sequential_only or args.async_regular_only):
+                print(f"\n⏸️  Pausing 30 seconds between execution phases...")
+                time.sleep(30)
+            phase_num += 1
+        
+        # Phase 3: Async in autoscaling context (unless skipped)
+        if not (args.sequential_only or args.async_regular_only or args.skip_async_autoscaling):
+            print(f"\n🚀 Phase {phase_num}: Async Execution in Autoscaling Context (Parallelization + Autoscaling)")
+            async_autoscaling_results = await runner.run_async_jobs(
+                jobs, 
+                "Autoscaling POC Context",  # Autoscaling context
+                max_concurrent=args.concurrent,
+                execution_mode=args.mode
+            )
+            runner.results['async_autoscaling_execution'] = async_autoscaling_results
         
         # Correlate all orchestrator data at the very end
         # This ensures orchestrator API calls don't affect job timing measurements
@@ -2030,17 +1953,21 @@ async def main():
         
         print(f"\n✅ Execution complete! Results saved to: {output_file}")
         
-        # Print helpful information about the mode used
+        # Print helpful information about the execution
+        print(f"\n💡 Execution Summary:")
+        print(f"   • Mode: {args.mode.upper()} ({'All jobs at once' if args.mode == 'all' else f'Batches of {args.concurrent}'})")
+        print(f"   • This three-way comparison helps isolate autoscaling benefits:")
+        print(f"     - Sequential vs Async Regular = Parallelization benefit")
+        print(f"     - Async Regular vs Async Autoscaling = Pure autoscaling benefit")
+        print(f"     - Sequential vs Async Autoscaling = Total improvement")
+        
         if args.mode == "all":
-            print(f"\n💡 You used ALL-AT-ONCE mode:")
-            print(f"   • All {len(jobs)} jobs were submitted simultaneously")
-            print(f"   • This requires higher concurrent job limits in SAS Viya")
-            print(f"   • If jobs failed to submit, try --mode batch --concurrent 10")
+            print(f"\n⚠️  ALL-AT-ONCE mode notes:")
+            print(f"   • If jobs failed to submit, try: --mode batch --concurrent 5")
         else:
-            print(f"\n💡 You used BATCH mode:")
-            print(f"   • Jobs were processed in batches of {args.concurrent}")
-            print(f"   • To try all-at-once: --mode all")
-            print(f"   • To increase batch size: --concurrent 10")
+            print(f"\n💡 Alternative modes:")
+            print(f"   • For faster execution: --mode all")
+            print(f"   • For larger batches: --concurrent 10")
         
     except Exception as e:
         print(f"❌ Error: {e}")
